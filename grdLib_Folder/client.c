@@ -34,11 +34,17 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     
-    snprintf(buffer, sizeof(buffer), "%s %s\n", func_name, *argv);
+    buffer[0] = '\0';  // Ensure buffer is empty
+    for (int i = 1; i < argc; i++) {  // Start from 1 to skip program name
+        strncat(buffer, argv[i], sizeof(buffer) - strlen(buffer) - 2);
+        strcat(buffer, ",");  // Add space between arguments
+    }
     
     // Send message to server
     send(sock, buffer, sizeof(buffer), 0);
     printf("Message sent\n");
+    
+    memset(buffer, 0, BUFFER_SIZE);
 
     // Read response from server
     read(sock, buffer, BUFFER_SIZE);

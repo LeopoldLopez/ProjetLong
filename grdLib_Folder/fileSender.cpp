@@ -37,7 +37,8 @@ int main() {
     // Send the filename to the server
     send(sock, filename.c_str(), filename.length(), 0);
     std::cout << "File name sent to server: " << filename << std::endl;
-
+    
+    sleep(5);
     // Open the file to send
     std::ifstream file(filename, std::ios::binary);
     if (!file) {

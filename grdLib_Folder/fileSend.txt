@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <cuda_runtime.h>
+
+__device__ int strcmp_dev(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+}
+
+__global__ void process_func(char *func_name, int *args, int count) {
+    int idx = threadIdx.x;  // Unique thread index
+
+    if (idx >= count) return;  // Prevent out-of-bounds access
+
+    if (!strcmp_dev(func_name, "sum")) {
+        __shared__ int sum;
+        if (idx == 0) sum = 0; // Initialize shared memory (only one thread)
+
+        __syncthreads(); // Ensure all threads see updated value
+
+        atomicAdd(&sum, args[idx]); // Atomic add to prevent race conditions
+
+        __syncthreads(); // Ensure completion before printing
+
+        if (idx == 0) printf("Sum: %d\n", sum);
+    } 
+    else if (!strcmp_dev(func_name, "multiply")) {
+        __shared__ int product;
+        if (idx == 0) product = 1;
+
+        __syncthreads();
+
+        atomicMul(&product, args[idx]); // CUDA does not have atomicMul, so implement custom logic
+
+        __syncthreads();
+
+        if (idx == 0) printf("Product: %d\n", product);
+    }
+}
+
+int main() {
+    char h_func_name[] = "sum";
+    int h_args[] = {1, 2, 3, 4, 5};
+    int count = 5;
+
+    char *d_func_name;
+    int *d_args;
+
+    cudaMalloc((void **)&d_func_name, sizeof(h_func_name));
+    cudaMalloc((void **)&d_args, count * sizeof(int));
+
+    cudaMemcpy(d_func_name, h_func_name, sizeof(h_func_name), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_args, h_args, count * sizeof(int), cudaMemcpyHostToDevice);
+
+    process_func<<<1, count>>>(d_func_name, d_args, count);
+
+    cudaDeviceSynchronize(); // Ensure all kernel calls complete before exit
+
+    cudaFree(d_func_name);
+    cudaFree(d_args);
+
+    return 0;
+}
+
