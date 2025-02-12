@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-#include <cuda_runtime.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
@@ -17,50 +16,6 @@ int queue_front = 0, queue_rear = 0;
 int server_running = 1;
 
 
-__device__ int strcmp_dev(const char *s1, const char *s2) {
-    while (*s1 && (*s1 == *s2)) {
-        s1++;
-        s2++;
-    }
-    return *(const unsigned char*)s1 - *(const unsigned char*)s2;
-}
-
-
-__global__ void process_func(char *func_name, int *args, int count, int *result) {
-    int idx = threadIdx.x;  // Unique thread index
-
-    if (idx >= count) return;  // Prevent out-of-bounds access
-
-	
-    __shared__ int sum;
-    
-    if (idx == 0) sum = 0;
-
-    __syncthreads();
-
-    
-    __syncthreads(); 
-
-    if (!strcmp_dev(func_name, "sum")) {
-
-
-        atomicAdd(&sum, args[idx]); // Atomic add to prevent race conditions
-
-       
-
-    }
-
-     __syncthreads(); 
-
-
-    if (idx == 0) *result = sum;
-
-
-}
-
-
-
-
 
 void handle_client(int client_socket) {
     char buffer[BUFFER_SIZE] = {0};
@@ -70,28 +25,19 @@ void handle_client(int client_socket) {
     ssize_t bytes_read = recv(client_socket, buffer, BUFFER_SIZE, 0);
     if (bytes_read > 0) {
         printf("Client: %s\n", buffer);
-        
-        // Allocate memory on GPU
-        //char *d_buffer;
-        //cudaMalloc((void**)&d_buffer, BUFFER_SIZE);
-        //cudaMemcpy(d_buffer, buffer, BUFFER_SIZE, cudaMemcpyHostToDevice);
-
-        // Process data on GPU
-        //int blockSize = 256;
-        //int numBlocks = (BUFFER_SIZE + blockSize - 1) / blockSize;
-        //process_data_on_gpu<<<numBlocks, blockSize>>>(d_buffer, bytes_read);
-        //cudaDeviceSynchronize();
-
-        // Copy processed data back to host
-        //cudaMemcpy(buffer, d_buffer, BUFFER_SIZE, cudaMemcpyDeviceToHost);
-        //cudaFree(d_buffer);
 
 
-	int args[100];
+	char *args[100];
 	int count = 0;
 	int result = 0;
 	
+	// Name of the shell script to execute for viewing GPU details
+    char *script_name = "./script.sh";
+    args[count++] = script_name;
+	
 	char *func_name = strtok(buffer, ",");
+    args[count++] = func_name;
+
 
 	char *token = strtok(NULL, ",");
 	
@@ -99,27 +45,13 @@ void handle_client(int client_socket) {
 		args[count++] = atoi(token);
 		token = strtok(NULL, ",");
 	}
-
-	char *d_func_name;
-    	int *d_args, *d_result;
-
-    	cudaMalloc((void **)&d_func_name, sizeof(func_name));
-    	cudaMalloc((void **)&d_args, count * sizeof(int));
-    	cudaMalloc((void **)&d_result, sizeof(int));
-
-	cudaMemcpy(d_func_name, func_name, sizeof(func_name), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_args, args, count * sizeof(int), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_result, &result, sizeof(int), cudaMemcpyHostToDevice);
-
-	process_func<<<1, count>>>(d_func_name, d_args, count, d_result);
-
-	cudaDeviceSynchronize(); // Ensure all kernel calls complete before exit
-
 	
-	cudaMemcpy(&result, d_result, sizeof(int), cudaMemcpyDeviceToHost);
+	args[count] = NULL;
+	
+	execvp(script_name, args);
 
         
-        printf("Processed data: %s\n", buffer);
+    printf("Processed data: %s\n", buffer);
 
 	char message[512] = {0};
 	sprintf(message, "%d", result);
