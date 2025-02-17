@@ -7,18 +7,16 @@ __global__ void sumKernel(int *args, int n, int *result) {
     int tid = threadIdx.x;
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     
-    if (i < n) sharedData[tid] = args[i];
-    else sharedData[tid] = 0;
+    if (i < n) sharedData[i] = args[i];
+    else sharedData[i] = 0;
     __syncthreads();
     
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (tid < stride) {
-            sharedData[tid] += sharedData[tid + stride];
+    if (tid == 0) {
+        for (int y = 1; y < n; y++) {
+            sharedData[0] += sharedData[y];
         }
-        __syncthreads();
+        atomicAdd(result, sharedData[0]);
     }
-    
-    if (tid == 0) atomicAdd(result, sharedData[0]);
 }
 
 
@@ -38,7 +36,7 @@ int main(int argc, char *argv[]) {
     int *d_args, *d_result;
     
     for (int i = 0; i < nbArgs; i++) {
-        h_args[i] = atoi(argv[i + 1]);
+        h_args[i] = atoi(argv[i + 1 + 3]);
     }
     
     cudaMalloc((void **)&d_args, nbArgs * sizeof(int));

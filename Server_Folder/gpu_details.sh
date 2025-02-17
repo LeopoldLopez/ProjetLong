@@ -8,7 +8,7 @@ fi
 
 args=("${@:2}")
 
-size=$(($# - 2))
+size=$(($# - 1))
 grid_size=1
 block_size=$(((size + grid_size - 1) / grid_size)) 
 

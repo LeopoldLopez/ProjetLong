@@ -58,14 +58,7 @@ void handle_client(int client_socket) {
 	// Send response to client
 	send(client_socket, message, strlen(message), 0);
 	printf("Message sent\n");
-
-
-	cudaFree(d_func_name);
-	cudaFree(d_args);
-	cudaFree(d_result);
-
     }
-    
     
     // Close client socket
     close(client_socket);

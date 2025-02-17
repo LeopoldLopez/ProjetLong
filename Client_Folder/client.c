@@ -21,8 +21,9 @@ int main(int argc, char *argv[]) {
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
-
+    
     // Convert IPv4 and IPv6 addresses from text to binary form
+    // IP address Jetson : 147.127.113.137
     if (inet_pton(AF_INET, "147.127.113.137", &serv_addr.sin_addr) <= 0) {
         perror("Invalid address/ Address not supported");
         exit(EXIT_FAILURE);
