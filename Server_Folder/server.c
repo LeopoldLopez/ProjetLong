@@ -19,7 +19,6 @@ int server_running = 1;
 void execute_script(const char *script, char *args, char *output, int output_size) {
     char command[BUFFER_SIZE] = {0};
 
-    // Vérifier si args est bien fourni
     if (!args || strlen(args) == 0) {
         snprintf(output, output_size, "Erreur: Aucun argument fourni.");
         return;
@@ -37,7 +36,6 @@ void execute_script(const char *script, char *args, char *output, int output_siz
     char formatted_args[BUFFER_SIZE] = {0};
     snprintf(formatted_args, sizeof(formatted_args), "%d 1 %d ", count, count);  // Ajout des 3 paramètres fixes
 
-    // Remplacer les virgules par des espaces et concaténer
     for (char *p = args; *p; p++) {
         if (*p == ',') *p = ' ';  // Remplace ',' par ' '
     }
@@ -63,9 +61,6 @@ void execute_script(const char *script, char *args, char *output, int output_siz
 }
 
 
-
-
-
 void handle_client(int client_socket) {
     char buffer[BUFFER_SIZE] = {0};
 
@@ -83,8 +78,11 @@ void handle_client(int client_socket) {
 
     char result[BUFFER_SIZE] = {0};
 
+    char commande[strlen(func_name) + 3];
+    snprintf(commande, sizeof(commande), "./%s", func_name);
+
     // Exécuter le script et récupérer le résultat
-    execute_script("./sum", args, result, sizeof(result));
+    execute_script(commande, args, result, sizeof(result));
     
     // Envoyer le résultat au client
     send(client_socket, result, strlen(result), 0);
@@ -154,6 +152,8 @@ int main() {
         }
 
         printf("Client connecté.\n");
+
+
 
         pthread_mutex_lock(&queue_mutex);
         client_queue[queue_rear] = new_socket;
