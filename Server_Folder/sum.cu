@@ -4,20 +4,22 @@
 
 __global__ void sumKernel(int *args, int n, int *result) {
     extern __shared__ int sharedData[];
-    int tid = threadIdx.x;
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    
+
+    // Charger uniquement les indices valides
     if (i < n) sharedData[i] = args[i];
-    else sharedData[i] = 0;
-    __syncthreads();
+    else sharedData[i] = 0; // Assurez-vous que les threads hors limites ne modifient pas sharedData
     
-    if (tid == 0) {
+    __syncthreads();
+
+    if (i == 0) {
         for (int y = 1; y < n; y++) {
             sharedData[0] += sharedData[y];
         }
         atomicAdd(result, sharedData[0]);
     }
 }
+
 
 
 int main(int argc, char *argv[]) {
