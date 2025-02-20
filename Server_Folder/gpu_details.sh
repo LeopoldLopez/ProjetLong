@@ -23,7 +23,7 @@ if [ -f "$output_file" ]; then
 else
     echo "$output_file does not exist."
 fi
-echo "Size,GridSize,BlockSize,Memory Usage, Kernel Time" > "$output_file"
+echo "Size,GridSize,BlockSize,MemoryUsage,KernelTime,GPUTime" > "$output_file"
 
 for ((grid_size=1; grid_size<=size; grid_size++)); do 
     block_size=$(((size+grid_size)/grid_size)) 
@@ -48,7 +48,7 @@ for ((grid_size=1; grid_size<=size; grid_size++)); do
     sum=$(echo "scale=6; $sumTotal / $rep" | bc)
     kernel_time=$(echo "scale=6; $kernel_timeTotal / $rep" | bc)
     gpu_time=$(echo "scale=9; $gpu_timeTotal / $rep" | bc)
-    echo "$size, $grid_size, $block_size, $sum, $kernel_time, $gpu_time" >> "$output_file"
+    echo "$size,$grid_size,$block_size,$sum,$kernel_time,$gpu_time" >> "$output_file"
 
 done
 
