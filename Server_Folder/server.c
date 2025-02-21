@@ -25,24 +25,34 @@ void execute_script(const char *script, char *args, char *output, int output_siz
     }
 
     // Compter combien de nombres on a en entrée
-    int count = 1;  // Au moins un nombre
+    int count = 1;
     for (char *p = args; *p; p++) {
         if (*p == ',') count++;
     }
+    count--; // Retirer la dernière virgule en trop
 
-    count--; //car il y a une virgule à la fin
+    // Choisir block_size optimal (puissance de 2)
+    int block_size = 1;
+    while (block_size * 2 <= count && block_size * 2 <= 1024) {
+        block_size *= 2;
+    }
 
-    // Construire les arguments pour sum : size, grid_size, block_size + args convertis
+    // Calculer grid_size
+    int grid_size = (count + block_size - 1) / block_size;
+
+    // Construire les arguments pour sum
     char formatted_args[BUFFER_SIZE] = {0};
-    snprintf(formatted_args, sizeof(formatted_args), "%d 1 %d ", count, count);  // Ajout des 3 paramètres fixes
+    snprintf(formatted_args, sizeof(formatted_args), "%d %d %d ", count, grid_size, block_size);
 
+    // Remplacement des virgules par des espaces
     for (char *p = args; *p; p++) {
-        if (*p == ',') *p = ' ';  // Remplace ',' par ' '
+        if (*p == ',') *p = ' ';
     }
     strncat(formatted_args, args, sizeof(formatted_args) - strlen(formatted_args) - 1);
 
-    snprintf(command, sizeof(command), "%s %s", script, formatted_args);
-
+    snprintf(command, sizeof(command), "%s ", script);
+    strncat(command, formatted_args, sizeof(command) - strlen(command) - 1);
+    
     printf("Executing command: %s\n", command);  // DEBUG
 
     FILE *fp = popen(command, "r");
@@ -59,6 +69,7 @@ void execute_script(const char *script, char *args, char *output, int output_siz
 
     pclose(fp);
 }
+
 
 
 void handle_client(int client_socket) {
