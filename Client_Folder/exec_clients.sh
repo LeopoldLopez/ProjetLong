@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Vérifie si un argument est fourni
+if [ -z "$1" ]; then
+    echo "Usage: $0 <nombre_de_requetes>"
+    exit 1
+fi
+
+num_requests=$1
+
+for i in $(seq 1 "$num_requests"); do
+    #Si on veut laisser les terminaux ouverts
+    #gnome-terminal -- bash -c "./client sum 10 5 3 10 2 10 4 5 $i; exec bash" &
+
+    gnome-terminal -- bash -c "./client sum 10 5 3 10 2 10 4 5 $i" &
+done
+
+wait
