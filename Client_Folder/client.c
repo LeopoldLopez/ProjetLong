@@ -43,13 +43,12 @@ int main(int argc, char *argv[]) {
     
     // Send message to server
     send(sock, buffer, sizeof(buffer), 0);
-    printf("Message sent\n");
     
     memset(buffer, 0, BUFFER_SIZE);
 
     // Read response from server
     read(sock, buffer, BUFFER_SIZE);
-    printf("Server: %s\n", buffer);
+    printf("%s", buffer);
 
     // Close socket
     close(sock);

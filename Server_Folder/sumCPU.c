@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     
     double sum_time_gettimeofday = measureExecutionTimeGettimeofday(add_start_tv, add_end_tv);
     
-    
+
     printf("Sum_time: %f\n", sum_time_gettimeofday);
     
     return sum_time_gettimeofday;
