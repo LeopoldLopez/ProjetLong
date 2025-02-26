@@ -1,7 +1,7 @@
 #!/bin/bash
 
 sizes=()
-for i in {0..1000}; do
+for i in {10000..100000}; do
   sizes+=($((1 + i * 100000)))
 done
     

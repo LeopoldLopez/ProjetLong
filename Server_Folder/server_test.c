@@ -23,7 +23,7 @@ void initializeArray(int *arr, int size) {
 }
 
 // Fonction pour exécuter un script et récupérer sa sortie
-void execute_script(const char *script, char *args, char *output, int output_size) {
+void execute_script(const char *script, char *args, char *output, int output_size, int count) {
     char command[BUFFER_SIZE] = {0};
 
     if (!args || strlen(args) == 0) {
@@ -32,11 +32,6 @@ void execute_script(const char *script, char *args, char *output, int output_siz
     }
 
     // Compter combien de nombres on a en entrée
-    int count = 1;
-    for (char *p = args; *p; p++) {
-        if (*p == ',') count++;
-    }
-    count--; // Retirer la dernière virgule en trop
 
     // Choisir block_size optimal (puissance de 2)
     int block_size = 1;
@@ -103,13 +98,12 @@ void handle_client(int client_socket) {
 
     char commande[strlen(func_name) + 3];
     snprintf(commande, sizeof(commande), "./%s", func_name);
+    int params = (int *)malloc(arg*sizeof(int))
 
-    int *param = (int *)malloc(*args * sizeof(int));
-
-    initializeArray(param, *args);
+    initializeArray(params, arg);
 
     // Exécuter le script et récupérer le résultat
-    execute_script(commande, args, result, sizeof(result));
+    execute_script(commande, params, result, sizeof(result), arg);
     
     // Envoyer le résultat au client
     send(client_socket, result, strlen(result), 0);
