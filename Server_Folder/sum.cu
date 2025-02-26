@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda_runtime.h>
+#include <sys/time.h>
+
+// Function to measure execution time using gettimeofday()
+double measureExecutionTimeGettimeofday(struct timeval start, struct timeval end) {
+    return (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6;
+}
 
 __global__ void sumKernel(int *args, int n, int *blockSums) {
     extern __shared__ int sharedData[];
@@ -59,12 +65,17 @@ int main(int argc, char *argv[]) {
     
     cudaMemcpy(d_args, h_args, nbArgs * sizeof(int), cudaMemcpyHostToDevice);
     
+    
+    struct timeval add_start_tv;
+    struct timeval add_end_tv;
+    gettimeofday(&add_start_tv, NULL);
     //Somme partielle dans chaque bloc
     sumKernel<<<gridSize, blockSize, blockSize * sizeof(int)>>>(d_args, nbArgs, d_blockSums);
     
     //Somme globale des blocs
     finalSumKernel<<<1, gridSize, gridSize * sizeof(int)>>>(d_blockSums, gridSize, d_result);
     
+    gettimeofday(&add_end_tv, NULL);
     cudaMemcpy(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost);
     
     printf("Sum: %d\n", h_result);
@@ -74,5 +85,11 @@ int main(int argc, char *argv[]) {
     cudaFree(d_result);
     free(h_args);
     
-    return 0;
+    
+    double sum_time_gettimeofday = measureExecutionTimeGettimeofday(add_start_tv, add_end_tv);
+    
+    
+    printf("Sum_time: %f\n", sum_time_gettimeofday);
+    
+    return sum_time_gettimeofday;
 }

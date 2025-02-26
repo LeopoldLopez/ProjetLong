@@ -13,13 +13,13 @@ for size in "${sizes[@]}"; do
     done
     
     start_time_cpu=$(date +%s.%N)
-    gnome-terminal -- bash -c "./client sumCPU " + param &
+    ./client sumCPU $param 
     end_time_cpu=$(date +%s.%N)
 
     cpu_duration=$(echo "$end_time_cpu - $start_time_cpu" | bc)
 
     start_time_gpu=$(date +%s.%N)
-    gnome-terminal -- bash -c "./client sum " + param &
+    ./client sum $param 
     end_time_gpu=$(date +%s.%N)
 
     gpu_duration=$(echo "$end_time_gpu - $start_time_gpu" | bc)
