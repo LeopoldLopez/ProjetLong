@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cuda_runtime.h>
 #include <sys/time.h>
 
 // Function to measure execution time using gettimeofday()
@@ -10,14 +9,15 @@ double measureExecutionTimeGettimeofday(struct timeval start, struct timeval end
 
 int sumCPU(int argc, char *argv[]){
     int sum = 0;
-    for (int i = 2; i < argc; i++) {
+    for (int i = 4; i < argc; i++) {
+	printf("%d", atoi(argv[i]));
         sum += atoi(argv[i]);
     }
 }
 
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
+    if (argc < 4) {
         printf("Usage: %s size num1 num2 [...]\n", argv[0]);
         return -1;
     }

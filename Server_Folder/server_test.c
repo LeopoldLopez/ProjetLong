@@ -16,10 +16,16 @@ int queue_front = 0, queue_rear = 0;
 int server_running = 1;
 
 // Function to initialize the input arrays with random integers
-void initializeArray(int *arr, int size) {
+void initializeArray(char *arr, int size) {
     for (int i = 0; i < size; i++) {
-        arr[i] = rand() % 100; // Generate random integers between 0 and 99
+        int num = rand() % 100; // Generate random integers between 0 and 99
+	char numStr[3];
+	snprintf(numStr, 3*sizeof(char), "%d", num);
+	strcat(arr, numStr);
+	strcat(arr, ",");
+	
     }
+    //printf("%s", arr);
 }
 
 // Fonction pour exécuter un script et récupérer sa sortie
@@ -59,9 +65,11 @@ void execute_script(const char *script, char *args, char *output, int output_siz
 
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
+
         snprintf(output, output_size, "Erreur lors de l'exécution du script.");
         return;
     }
+
 
     output[0] = '\0';
     char temp[256];
@@ -98,7 +106,7 @@ void handle_client(int client_socket) {
 
     char commande[strlen(func_name) + 3];
     snprintf(commande, sizeof(commande), "./%s", func_name);
-    int params = (int *)malloc(arg*sizeof(int))
+    char *params = (char *)malloc(arg*sizeof(char));
 
     initializeArray(params, arg);
 
@@ -110,6 +118,7 @@ void handle_client(int client_socket) {
 
     close(client_socket);
     printf("Client déconnecté.\n");
+   free(params);
 }
 
 
