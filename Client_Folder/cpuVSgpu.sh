@@ -1,8 +1,8 @@
 #!/bin/bash
 
 sizes=()
-for i in {10000..100000}; do
-  sizes+=($((1 + i * 100000)))
+for i in {1..100}; do
+  sizes+=($((1 + i * 10000)))
 done
     
 
@@ -11,7 +11,7 @@ output_file="cpu_vs_gpu_time.log"
 
 for size in "${sizes[@]}"; do
     
-    cpu_duration=$(./"client" sumCPU $size) 
+    cpu_duration=$(./"client" sumCPU $size)
 
     gpu_duration=$(./"client" sum $size)
 
