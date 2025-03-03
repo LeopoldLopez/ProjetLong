@@ -10,7 +10,7 @@ double measureExecutionTimeGettimeofday(struct timeval start, struct timeval end
 
 __global__ void sumKernel(int *args, int n, int *blockSums) {
     extern __shared__ int sharedData[];
-
+    
     int tid = threadIdx.x;
     int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -18,9 +18,13 @@ __global__ void sumKernel(int *args, int n, int *blockSums) {
     sharedData[tid] = (globalIdx < n) ? args[globalIdx] : 0;
     __syncthreads();
 
-    if (tid == 0) 
-        for (int y = 1; y < n; y++) 
-            sharedData[tid] += sharedData[y];
+    // Réduction parallèle en mémoire partagée
+    for (int stride = blockDim.x / 2; stride > 0; stride /= 2) {
+        if (tid < stride) {
+            sharedData[tid] += sharedData[tid + stride];
+        }
+        __syncthreads();
+    }
 
     // Seul le thread 0 stocke le résultat du bloc
     if (tid == 0) {
@@ -28,17 +32,19 @@ __global__ void sumKernel(int *args, int n, int *blockSums) {
     }
 }
 
+
 // Kernel pour additionner les sommes des blocs
 __global__ void finalSumKernel(int *blockSums, int numBlocks, int *result) {
+    int tid = threadIdx.x;
 
-    int globalIdx = blockIdx.x * blockDim.x + threadIdx.x;
- 
-    if (globalIdx == 0) {
-        for (int i = 1; i < numBlocks; i++)
-            blockSums[0] += blockSums[i];
-        *result = blockSums[0];
+    if (tid == 0) {
+        int sum = 0;
+        for (int i = 0; i < numBlocks; i++)
+            sum += blockSums[i];
+        *result = sum;
     }
 }
+
 
 int readNumbersFromFile(const char *filename, int **numbers) {
     FILE *file = fopen(filename, "r");
