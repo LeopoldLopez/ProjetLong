@@ -11,7 +11,7 @@
 
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t queue_cv = PTHREAD_COND_INITIALIZER;
-int client_queue[100];
+int client_queue[1000];
 int queue_front = 0, queue_rear = 0;
 int server_running = 1;
 
@@ -98,7 +98,9 @@ void handle_client(int client_socket) {
     char commande[strlen(func_name) + 3];
     snprintf(commande, sizeof(commande), "./%s", func_name);
 
-    char args_filename[] = "args.txt";
+    char args_filename[BUFFER_SIZE];
+    snprintf(args_filename, BUFFER_SIZE, "args%d.txt", client_socket);
+
     initializeArrayToFile(args_filename, arg);
 
     execute_script(commande, args_filename, result, sizeof(result), arg);
@@ -152,7 +154,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server_fd, 10) < 0) {
+    if (listen(server_fd, 1000) < 0) {
         perror("Erreur listen");
         close(server_fd);
         exit(EXIT_FAILURE);

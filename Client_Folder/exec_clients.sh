@@ -10,9 +10,9 @@ num_requests=$1
 
 for i in $(seq 1 "$num_requests"); do
     #Si on veut laisser les terminaux ouverts
-    #gnome-terminal -- bash -c "./client sum 10 5 3 10 2 10 4 5 $i; exec bash" &
+    #gnome-terminal -- bash -c "./client sum ($i*1000); exec bash" &
 
-    gnome-terminal -- bash -c "./client sum 10 5 3 10 2 10 4 5 $i" &
+    gnome-terminal -- bash -c "./client sum $i*1000" &
 done
 
 wait

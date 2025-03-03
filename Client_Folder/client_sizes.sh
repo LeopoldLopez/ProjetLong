@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sizes=(2 4 8 16 32 64)
+sizes=(2 4 8 16 32 64 128)
 
 output_file="sizes_execution_times.log"
 > "$output_file"

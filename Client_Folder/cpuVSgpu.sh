@@ -1,8 +1,8 @@
 #!/bin/bash
 
 sizes=()
-for i in {1..10}; do
-  sizes+=($((1 + i * 100)))
+for i in {1..100}; do
+  sizes+=($((i * 50)))
 done
     
 
