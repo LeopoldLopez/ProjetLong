@@ -53,7 +53,6 @@ int main(int argc, char *argv[]) {
 
     //printf("%s", buffer);
 
-    // Close socket
     close(sock);
     
     return 0;
