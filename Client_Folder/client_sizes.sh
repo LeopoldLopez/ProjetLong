@@ -1,5 +1,5 @@
 #!/bin/bash
-sizes=(2 4 8 16 32 128)
+sizes=(2 4 8 16 32 64 128)
 
 last_index=$(( ${#sizes[@]} - 1 ))
 echo $last_index
@@ -15,8 +15,8 @@ output_file="sizes_execution_times.log"
 # Boucle à travers les tailles
 for size in "${sizes[@]}"; do
     echo "Exécution pour la taille $size..."
-
-    ./exec_clients.sh "$size"
+    global_duration=0.0
+    ./exec_clients "$size"
 
 
     for i in $(seq 1 "$size"); do
@@ -42,6 +42,10 @@ done
 for i in $(seq 1 "$max_value"); do
     rm -f "output$i.txt"
 done
+
+#for i in $(seq 1 "$max_value"); do
+#    rm -f "output$i.txt"
+#done
 
 echo "Exécution complète. Résultats enregistrés dans $output_file."
 
