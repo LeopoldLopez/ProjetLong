@@ -3,9 +3,15 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
+
+// Function to measure execution time using gettimeofday()
+double measureExecutionTimeGettimeofday(struct timeval start, struct timeval end) {
+    return (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6;
+}
 
 int main(int argc, char *argv[]) {
     int sock = 0;
@@ -34,6 +40,10 @@ int main(int argc, char *argv[]) {
         perror("Connection failed");
         exit(EXIT_FAILURE);
     }
+
+    struct timeval add_start_tv;
+    struct timeval add_end_tv;
+    gettimeofday(&add_start_tv, NULL);
     
     buffer[0] = '\0';  // Ensure buffer is empty
     for (int i = 1; i < argc; i++) {  // Start from 1 to skip program name
@@ -48,9 +58,18 @@ int main(int argc, char *argv[]) {
 
     // Read response from server
     read(sock, buffer, BUFFER_SIZE);
+    
+    gettimeofday(&add_end_tv, NULL);
+
     printf("%s", buffer);
 
     // Close socket
     close(sock);
-    return 0;
+    
+    
+    double sum_time_gettimeofday = measureExecutionTimeGettimeofday(add_start_tv, add_end_tv);
+    
+    printf("%lf\n", sum_time_gettimeofday);
+    
+    return sum_time_gettimeofday;
 }

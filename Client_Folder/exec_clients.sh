@@ -9,10 +9,13 @@ fi
 num_requests=$1
 
 for i in $(seq 1 "$num_requests"); do
-    #Si on veut laisser les terminaux ouverts
-    #gnome-terminal -- bash -c "./client sum ($i*1000); exec bash" &
+    # Si on veut laisser les terminaux ouverts
+    # gnome-terminal -- bash -c "./client sum $(( i * 1000 )); exec bash" &
 
-    gnome-terminal -- bash -c "./client sum $i*1000" &
+    size=$(( i * 1000 )) 
+
+    gnome-terminal -- bash -c "./client sum $size 2>&1 | tee -a output$i.txt" &
 done
+
 
 wait

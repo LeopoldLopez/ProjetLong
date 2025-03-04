@@ -1,6 +1,13 @@
 #!/bin/bash
+sizes=(2 4 8 16 32 128)
 
-sizes=(2 4 8 16 32 64 128)
+last_index=$(( ${#sizes[@]} - 1 ))
+echo $last_index
+max_value=${sizes[$last_index]}
+
+for i in $(seq 1 "$max_value"); do
+    touch "output$i.txt"
+done
 
 output_file="sizes_execution_times.log"
 > "$output_file"
@@ -9,20 +16,31 @@ output_file="sizes_execution_times.log"
 for size in "${sizes[@]}"; do
     echo "Exécution pour la taille $size..."
 
-    start_time=$(date +%s.%N)
     ./exec_clients.sh "$size"
-    end_time=$(date +%s.%N)
 
-    global_duration=$(echo "$end_time - $start_time" | bc)
+
+    for i in $(seq 1 "$size"); do
+        while IFS= read -r line; do
+            global_duration=$(echo "$global_duration + $line" | bc)
+        done < "output$i.txt"
+    done
+
 
     # Si la durée commence par un point, on ajoute un zéro avant
     if [[ "$global_duration" == .* ]]; then
         global_duration="0$global_duration"
     fi
+    
 
     echo "$size,$global_duration" >> "$output_file"
     
     echo "Temps pour taille $size : $global_duration secondes"
+
+    wait
+done
+
+for i in $(seq 1 "$max_value"); do
+    rm -f "output$i.txt"
 done
 
 echo "Exécution complète. Résultats enregistrés dans $output_file."
