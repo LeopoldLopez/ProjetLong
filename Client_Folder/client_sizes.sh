@@ -1,5 +1,5 @@
 #!/bin/bash
-sizes=(2 4 8 16 32 128)
+sizes=(2 4 8 16 32 64 128)
 
 last_index=$(( ${#sizes[@]} - 1 ))
 echo $last_index
@@ -14,6 +14,9 @@ output_file="sizes_execution_times.log"
 
 # Boucle à travers les tailles
 for size in "${sizes[@]}"; do
+
+    global_duration=0.0
+
     echo "Exécution pour la taille $size..."
 
     ./exec_clients.sh "$size"
@@ -23,8 +26,9 @@ for size in "${sizes[@]}"; do
         while IFS= read -r line; do
             global_duration=$(echo "$global_duration + $line" | bc)
         done < "output$i.txt"
+        
+        echo -n > "output$i.txt"
     done
-
 
     # Si la durée commence par un point, on ajoute un zéro avant
     if [[ "$global_duration" == .* ]]; then

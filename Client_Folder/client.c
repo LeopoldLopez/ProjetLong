@@ -63,13 +63,9 @@ int main(int argc, char *argv[]) {
 
     printf("%s", buffer);
 
-    // Close socket
     close(sock);
     
-    
     double sum_time_gettimeofday = measureExecutionTimeGettimeofday(add_start_tv, add_end_tv);
-    
-    printf("%lf\n", sum_time_gettimeofday);
-    
-    return sum_time_gettimeofday;
+        
+    return 0;
 }
