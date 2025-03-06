@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define CMD_TEMPLATE "./client sum %d"
+#define CMD_TEMPLATE "./client sum %d 2>&1 | tee output%d.txt"
 
 typedef struct {
     int index;
@@ -22,29 +22,12 @@ void* run_client(void* arg) {
     char command[256];
 
     // Format the command string
-    snprintf(command, sizeof(command), CMD_TEMPLATE, data->size);
+    snprintf(command, sizeof(command), CMD_TEMPLATE, data->size, data->index);
 
     printf("Executing: %s\n", command);
 
-    struct timeval add_start_tv;
-    struct timeval add_end_tv;
-    gettimeofday(&add_start_tv, NULL);
     system(command);  // Execute the command
-    
-    gettimeofday(&add_end_tv, NULL);
-    double sum_time_gettimeofday = measureExecutionTimeGettimeofday(add_start_tv, add_end_tv);
-    
-    char filename[256];
-    snprintf(filename, sizeof(filename), "output%d.txt", data->index);  // Using data->index for file name
 
-    FILE* file = fopen(filename, "w");
-    if (file) {
-        // Write the execution time to the file
-        fprintf(file, "%lf\n", sum_time_gettimeofday);
-        fclose(file);
-    } else {
-        perror("Failed to open output file");
-    }
 
     free(data);  // Free allocated memory
     return NULL;

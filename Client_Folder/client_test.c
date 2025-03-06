@@ -6,13 +6,18 @@
 #include <sys/time.h>
 
 #define PORT 8080
-#define BUFFER_SIZE 8192
+#define BUFFER_SIZE 1024
 
+// Function to measure execution time using gettimeofday()
+double measureExecutionTimeGettimeofday(struct timeval start, struct timeval end) {
+    return (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) * 1e-6;
+}
 
 int main(int argc, char *argv[]) {
     int sock = 0;
     struct sockaddr_in serv_addr;
     char buffer[BUFFER_SIZE] = {0};
+    char *message = "Hello from client";
 
     // Create socket
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -35,11 +40,15 @@ int main(int argc, char *argv[]) {
         perror("Connection failed");
         exit(EXIT_FAILURE);
     }
+
+    struct timeval add_start_tv;
+    struct timeval add_end_tv;
+    gettimeofday(&add_start_tv, NULL);
     
     buffer[0] = '\0';  // Ensure buffer is empty
     for (int i = 1; i < argc; i++) {  // Start from 1 to skip program name
         strncat(buffer, argv[i], sizeof(buffer) - strlen(buffer) - 2);
-        strcat(buffer, " ");  // Add space between arguments
+        strcat(buffer, ",");  // Add space between arguments
     }
     
     // Send message to server
@@ -50,9 +59,13 @@ int main(int argc, char *argv[]) {
     // Read response from server
     read(sock, buffer, BUFFER_SIZE);
     
+    gettimeofday(&add_end_tv, NULL);
+
     close(sock);
     
-    printf("%s\n", buffer);
+    double sum_time_gettimeofday = measureExecutionTimeGettimeofday(add_start_tv, add_end_tv);
+
+    printf("%lf\n", sum_time_gettimeofday);
         
     return 0;
 }

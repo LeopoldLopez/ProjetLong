@@ -11,9 +11,9 @@ output_file="cpu_vs_gpu_time.log"
 
 for size in "${sizes[@]}"; do
     
-    cpu_duration=$(./"client" sumCPU $size)
+    cpu_duration=$(./"client_test" sumCPU $size)
 
-    gpu_duration=$(./"client" sum $size)
+    gpu_duration=$(./"client_test" sum $size)
 
     echo "$size,$cpu_duration,$gpu_duration" >> "$output_file" 
     wait
