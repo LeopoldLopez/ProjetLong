@@ -6,7 +6,7 @@
 #include <pthread.h>
 
 #define PORT 8080
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 8192
 #define THREAD_POOL_SIZE 5
 
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -15,46 +15,12 @@ int client_queue[1000];
 int queue_front = 0, queue_rear = 0;
 int server_running = 1;
 
-void initializeArrayToFile(const char *filename, int size) {
-    FILE *file = fopen(filename, "w");
-    if (!file) {
-        perror("Erreur lors de l'ouverture du fichier");
-        return;
-    }
-
-    //nombre d'arguments en première ligne
-    fprintf(file, "%d\n", size);
-
-    for (int i = 0; i < size; i++) {
-        fprintf(file, "9 ");
-    }
-    
-    fclose(file);
-}
 
 // Fonction pour exécuter un script et récupérer sa sortie
-void execute_script(const char *script, const char *args_filename, char *output, int output_size, int count) {
+void execute_script(const char *script, char *output, int output_size) {
 
-    if (!args_filename) {
-        snprintf(output, output_size, "Erreur: Aucun fichier d'arguments fourni.");
-        return;
-    }
-
-    // Choisir block_size optimal (puissance de 2)
-    int block_size = 1;
-    while (block_size * 2 <= count && block_size * 2 <= 1024) {
-        block_size *= 2;
-    }
-
-    // Calculer grid_size
-    int grid_size = (count + block_size - 1) / block_size;
-
-    // Construire les arguments pour la fonction
-    size_t command_size = (2 * (count + 3) + strlen(script) + 4 + BUFFER_SIZE) * sizeof(char);
-    char* command = (char *)malloc(command_size); //On compte aussi le nom de la fonction, les espaces entre les arguments (2*) et les méta-paramètres(+3)
-    snprintf(command, command_size, "%s %d %d %s", script, grid_size, block_size, args_filename);
-    
-    FILE *fp = popen(command, "r");
+    printf("Executing command: %s\n", script);
+    FILE *fp = popen(script, "r");
     if (fp == NULL) {
 
         snprintf(output, output_size, "Erreur lors de l'exécution du script.");
@@ -62,12 +28,11 @@ void execute_script(const char *script, const char *args_filename, char *output,
     }
 
 
-    output[0] = '\0';
+    output[BUFFER_SIZE] = '\0';
     char temp[256];
     while (fgets(temp, sizeof(temp), fp) != NULL) {
         strncat(output, temp, output_size - strlen(output) - 1);
     }
-    free(command);
     pclose(fp);
 }
 
@@ -85,32 +50,15 @@ void handle_client(int client_socket) {
 
     printf("Client sent: %s\n", buffer);
 
-    char *func_name = strtok(buffer, ",");
-    char *args = strtok(NULL, ",");
-    int arg = 0;
-
-    if (args != NULL) {
-        arg = atoi(args);
-    }
-
     char result[BUFFER_SIZE] = {0};
 
-    char commande[strlen(func_name) + 1];
-    snprintf(commande, sizeof(commande), "%s", func_name);
-
-    char args_filename[BUFFER_SIZE];
-    snprintf(args_filename, BUFFER_SIZE, "args%d.txt", client_socket);
-
-    initializeArrayToFile(args_filename, arg);
-
-    execute_script(commande, args_filename, result, sizeof(result), arg);
+    execute_script(buffer, result, sizeof(result));
 
     send(client_socket, result, strlen(result), 0);
 
     close(client_socket);
     printf("Client déconnecté.\n");
 
-    remove(args_filename);
 }
 
 
