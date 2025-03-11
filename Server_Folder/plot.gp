@@ -12,13 +12,13 @@ plot "nvprof_results.csv" using 2:4 with linespoints title "Memory Usage" lt rgb
 set output 'kernel_time.png'
 set title "Kernel Time vs Grid Size"
 set xlabel "Grid Size"
-set ylabel "Kernel Time (ms)"
+set ylabel "Kernel Time (us)"
 plot "nvprof_results.csv" using 2:5 with linespoints title "Kernel Time" lt rgb "red"
 
 # GPU Time Plot
 set output 'gpu_time.png'
 set title "GPU Time vs Grid Size"
 set xlabel "Grid Size"
-set ylabel "GPU Time (ms)"
+set ylabel "GPU Time (us)"
 plot "nvprof_results.csv" using 2:6 with linespoints title "GPU Time" lt rgb "green"
 
