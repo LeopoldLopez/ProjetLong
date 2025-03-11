@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define CMD_TEMPLATE "./client sum %d 2>&1 | tee output%d.txt"
+#define CMD_TEMPLATE "./client_test sum %d 2>&1 | tee output%d.txt"
 
 typedef struct {
     int index;

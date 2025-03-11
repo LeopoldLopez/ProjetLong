@@ -1,5 +1,8 @@
 #!/bin/bash
-sizes=(2 4 8 16 32 64 128)
+sizes=()
+for i in {1..20}; do
+  sizes+=($((i * 10)))
+done
 
 last_index=$(( ${#sizes[@]} - 1 ))
 echo $last_index
