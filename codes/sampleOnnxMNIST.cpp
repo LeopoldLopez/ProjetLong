@@ -1,12 +1,11 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: Apache-2.0
+ * Copyright (c) 2021, NVIDIA CORPORATION. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,10 +23,6 @@
 //! [--useDLACore=<int>]
 //!
 
-// Define TRT entrypoints used in common code
-#define DEFINE_TRT_ENTRYPOINTS 1
-#define DEFINE_TRT_LEGACY_PARSER_ENTRYPOINT 0
-
 #include "argsParser.h"
 #include "buffers.h"
 #include "common.h"
@@ -41,7 +36,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-using namespace nvinfer1;
+
 using samplesCommon::SampleUniquePtr;
 
 const std::string gSampleName = "TensorRT.sample_onnx_mnist";
@@ -55,7 +50,6 @@ class SampleOnnxMNIST
 public:
     SampleOnnxMNIST(const samplesCommon::OnnxSampleParams& params)
         : mParams(params)
-        , mRuntime(nullptr)
         , mEngine(nullptr)
     {
     }
@@ -77,7 +71,6 @@ private:
     nvinfer1::Dims mOutputDims; //!< The dimensions of the output to the network.
     int mNumber{0};             //!< The number to classify
 
-    std::shared_ptr<nvinfer1::IRuntime> mRuntime;   //!< The TensorRT runtime used to deserialize the engine
     std::shared_ptr<nvinfer1::ICudaEngine> mEngine; //!< The TensorRT engine used to run the network
 
     //!
@@ -85,7 +78,7 @@ private:
     //!
     bool constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
         SampleUniquePtr<nvinfer1::INetworkDefinition>& network, SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-        SampleUniquePtr<nvonnxparser::IParser>& parser, SampleUniquePtr<nvinfer1::ITimingCache>& timingCache);
+        SampleUniquePtr<nvonnxparser::IParser>& parser);
 
     //!
     //! \brief Reads the input  and stores the result in a managed buffer
@@ -104,7 +97,7 @@ private:
 //! \details This function creates the Onnx MNIST network by parsing the Onnx model and builds
 //!          the engine that will be used to run MNIST (mEngine)
 //!
-//! \return true if the engine was created successfully and false otherwise
+//! \return Returns true if the engine was created successfully and false otherwise
 //!
 bool SampleOnnxMNIST::build()
 {
@@ -114,7 +107,8 @@ bool SampleOnnxMNIST::build()
         return false;
     }
 
-    auto network = SampleUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(0));
+    const auto explicitBatch = 1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+    auto network = SampleUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicitBatch));
     if (!network)
     {
         return false;
@@ -133,9 +127,7 @@ bool SampleOnnxMNIST::build()
         return false;
     }
 
-    auto timingCache = SampleUniquePtr<nvinfer1::ITimingCache>();
-
-    auto constructed = constructNetwork(builder, network, config, parser, timingCache);
+    auto constructed = constructNetwork(builder, network, config, parser);
     if (!constructed)
     {
         return false;
@@ -155,20 +147,14 @@ bool SampleOnnxMNIST::build()
         return false;
     }
 
-    if (timingCache != nullptr && !mParams.timingCacheFile.empty())
-    {
-        samplesCommon::updateTimingCacheFile(
-            sample::gLogger.getTRTLogger(), mParams.timingCacheFile, timingCache.get(), *builder);
-    }
-
-    mRuntime = std::shared_ptr<nvinfer1::IRuntime>(createInferRuntime(sample::gLogger.getTRTLogger()));
-    if (!mRuntime)
+    SampleUniquePtr<IRuntime> runtime{createInferRuntime(sample::gLogger.getTRTLogger())};
+    if (!runtime)
     {
         return false;
     }
 
     mEngine = std::shared_ptr<nvinfer1::ICudaEngine>(
-        mRuntime->deserializeCudaEngine(plan->data(), plan->size()), samplesCommon::InferDeleter());
+        runtime->deserializeCudaEngine(plan->data(), plan->size()), samplesCommon::InferDeleter());
     if (!mEngine)
     {
         return false;
@@ -195,7 +181,7 @@ bool SampleOnnxMNIST::build()
 //!
 bool SampleOnnxMNIST::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& builder,
     SampleUniquePtr<nvinfer1::INetworkDefinition>& network, SampleUniquePtr<nvinfer1::IBuilderConfig>& config,
-    SampleUniquePtr<nvonnxparser::IParser>& parser, SampleUniquePtr<nvinfer1::ITimingCache>& timingCache)
+    SampleUniquePtr<nvonnxparser::IParser>& parser)
 {
     auto parsed = parser->parseFromFile(locateFile(mParams.onnxFileName, mParams.dataDirs).c_str(),
         static_cast<int>(sample::gLogger.getReportableSeverity()));
@@ -204,25 +190,15 @@ bool SampleOnnxMNIST::constructNetwork(SampleUniquePtr<nvinfer1::IBuilder>& buil
         return false;
     }
 
+    config->setMaxWorkspaceSize(16_MiB);
     if (mParams.fp16)
     {
         config->setFlag(BuilderFlag::kFP16);
     }
-    if (mParams.bf16)
-    {
-        config->setFlag(BuilderFlag::kBF16);
-    }
     if (mParams.int8)
     {
         config->setFlag(BuilderFlag::kINT8);
-        network->getInput(0)->setDynamicRange(-1.0F, 1.0F);
-        constexpr float kTENSOR_DYNAMIC_RANGE = 4.0F;
-        samplesCommon::setAllDynamicRanges(network.get(), kTENSOR_DYNAMIC_RANGE, kTENSOR_DYNAMIC_RANGE);
-    }
-    if (mParams.timingCacheFile.size())
-    {
-        timingCache = samplesCommon::buildTimingCacheFromFile(
-            sample::gLogger.getTRTLogger(), *config, mParams.timingCacheFile, sample::gLogError);
+        samplesCommon::setAllDynamicRanges(network.get(), 127.0f, 127.0f);
     }
 
     samplesCommon::enableDLA(builder.get(), config.get(), mParams.dlaCore);
@@ -245,12 +221,6 @@ bool SampleOnnxMNIST::infer()
     if (!context)
     {
         return false;
-    }
-
-    for (int32_t i = 0, e = mEngine->getNbIOTensors(); i < e; i++)
-    {
-        auto const name = mEngine->getIOTensorName(i);
-        context->setTensorAddress(name, buffers.getDeviceBuffer(name));
     }
 
     // Read the input data into the managed buffers
@@ -321,11 +291,11 @@ bool SampleOnnxMNIST::verifyOutput(const samplesCommon::BufferManager& buffers)
 {
     const int outputSize = mOutputDims.d[1];
     float* output = static_cast<float*>(buffers.getHostBuffer(mParams.outputTensorNames[0]));
-    float val{0.0F};
+    float val{0.0f};
     int idx{0};
 
     // Calculate Softmax
-    float sum{0.0F};
+    float sum{0.0f};
     for (int i = 0; i < outputSize; i++)
     {
         output[i] = exp(output[i]);
@@ -344,12 +314,12 @@ bool SampleOnnxMNIST::verifyOutput(const samplesCommon::BufferManager& buffers)
 
         sample::gLogInfo << " Prob " << i << "  " << std::fixed << std::setw(5) << std::setprecision(4) << output[i]
                          << " "
-                         << "Class " << i << ": " << std::string(int(std::floor(output[i] * 10 + 0.5F)), '*')
+                         << "Class " << i << ": " << std::string(int(std::floor(output[i] * 10 + 0.5f)), '*')
                          << std::endl;
     }
     sample::gLogInfo << std::endl;
 
-    return idx == mNumber && val > 0.9F;
+    return idx == mNumber && val > 0.9f;
 }
 
 //!
@@ -358,12 +328,12 @@ bool SampleOnnxMNIST::verifyOutput(const samplesCommon::BufferManager& buffers)
 samplesCommon::OnnxSampleParams initializeSampleParams(const samplesCommon::Args& args)
 {
     samplesCommon::OnnxSampleParams params;
-    if (args.dataDirs.empty()) // Use default directories if user hasn't provided directory paths
+    if (args.dataDirs.empty()) //!< Use default directories if user hasn't provided directory paths
     {
         params.dataDirs.push_back("data/mnist/");
         params.dataDirs.push_back("data/samples/mnist/");
     }
-    else // Use the data directory provided by the user
+    else //!< Use the data directory provided by the user
     {
         params.dataDirs = args.dataDirs;
     }
@@ -373,8 +343,6 @@ samplesCommon::OnnxSampleParams initializeSampleParams(const samplesCommon::Args
     params.dlaCore = args.useDLACore;
     params.int8 = args.runInInt8;
     params.fp16 = args.runInFp16;
-    params.bf16 = args.runInBf16;
-    params.timingCacheFile = args.timingCacheFile;
 
     return params;
 }
@@ -386,20 +354,17 @@ void printHelpInfo()
 {
     std::cout
         << "Usage: ./sample_onnx_mnist [-h or --help] [-d or --datadir=<path to data directory>] [--useDLACore=<int>]"
-        << "[-t or --timingCacheFile=<path to timing cache file]" << std::endl;
-    std::cout << "--help             Display help information" << std::endl;
-    std::cout << "--datadir          Specify path to a data directory, overriding the default. This option can be used "
+        << std::endl;
+    std::cout << "--help          Display help information" << std::endl;
+    std::cout << "--datadir       Specify path to a data directory, overriding the default. This option can be used "
                  "multiple times to add multiple directories. If no data directories are given, the default is to use "
                  "(data/samples/mnist/, data/mnist/)"
               << std::endl;
-    std::cout << "--useDLACore=N     Specify a DLA engine for layers that support DLA. Value can range from 0 to n-1, "
+    std::cout << "--useDLACore=N  Specify a DLA engine for layers that support DLA. Value can range from 0 to n-1, "
                  "where n is the number of DLA engines on the platform."
               << std::endl;
-    std::cout << "--int8             Run in Int8 mode." << std::endl;
-    std::cout << "--fp16             Run in FP16 mode." << std::endl;
-    std::cout << "--bf16             Run in BF16 mode." << std::endl;
-    std::cout << "--timingCacheFile  Specify path to a timing cache file. If it does not already exist, it will be "
-              << "created." << std::endl;
+    std::cout << "--int8          Run in Int8 mode." << std::endl;
+    std::cout << "--fp16          Run in FP16 mode." << std::endl;
 }
 
 int main(int argc, char** argv)
