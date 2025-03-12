@@ -95,8 +95,8 @@ void handle_client(int client_socket) {
 
     char result[BUFFER_SIZE] = {0};
 
-    char commande[strlen(func_name) + 1];
-    snprintf(commande, sizeof(commande), "%s", func_name);
+    char commande[strlen(func_name) + 3];
+    snprintf(commande, sizeof(commande), "./%s", func_name);
 
     char args_filename[BUFFER_SIZE];
     snprintf(args_filename, BUFFER_SIZE, "args%d.txt", client_socket);

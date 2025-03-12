@@ -17,7 +17,6 @@ int main(int argc, char *argv[]) {
     int sock = 0;
     struct sockaddr_in serv_addr;
     char buffer[BUFFER_SIZE] = {0};
-    char *message = "Hello from client";
 
     // Create socket
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -30,7 +29,7 @@ int main(int argc, char *argv[]) {
     
     // Convert IPv4 and IPv6 addresses from text to binary form
     // IP address Jetson : 147.127.113.137
-    if (inet_pton(AF_INET, "147.127.113.137", &serv_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, "172.22.220.234", &serv_addr.sin_addr) <= 0) {
         perror("Invalid address/ Address not supported");
         exit(EXIT_FAILURE);
     }

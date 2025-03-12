@@ -1,6 +1,6 @@
 #!/bin/bash
 sizes=()
-for i in {1..20}; do
+for i in {1..15}; do
   sizes+=($((i * 10)))
 done
 
@@ -27,9 +27,12 @@ for size in "${sizes[@]}"; do
 
     for i in $(seq 1 "$size"); do
         while IFS= read -r line; do
-            global_duration=$(echo "$global_duration + $line" | bc)
+            global_duration=$(echo "$global_duration + $line" | bc -l)
         done < "output$i.txt"
     done
+
+    wait 
+    global_duration=$(echo "$global_duration / $size" | bc -l)
 
     # Si la durée commence par un point, on ajoute un zéro avant
     if [[ "$global_duration" == .* ]]; then
@@ -59,9 +62,9 @@ gnuplot_script="plot_script.gp"
 cat <<EOL > "$gnuplot_script"
 set terminal pngcairo enhanced size 800,600
 set output 'execution_times_graph.png'
-set title "Temps d'exécution par nombre de clients"
-set xlabel "Taille (size)"
-set ylabel "Temps global (en secondes)"
+set title "Global execution time by number of clients"
+set xlabel "Number of clients"
+set ylabel "Total time (in seconds)"
 # Utiliser tail pour ignorer la première ligne (en-tête)
 set datafile separator ","
 plot "$output_file" using 1:2 with linespoints title 'Temps Global'

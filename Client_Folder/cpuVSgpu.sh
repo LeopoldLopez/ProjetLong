@@ -28,9 +28,9 @@ gnuplot_script="cpu_gpu_plot_script.gp"
 cat <<EOL > "$gnuplot_script"
 set terminal pngcairo enhanced size 800,600
 set output 'execution_times_cpu_gpu.png'
-set title "Temps d'exécution CPU vs GPU"
-set xlabel "Taille du vecteur de paramètres"
-set ylabel "Temps (en secondes)"
+set title "Execution time of the CPU and GPU
+set xlabel "Size of the parameter vector"
+set ylabel "Time (in seconds)"
 set datafile separator ","
 
 # Tracer les deux courbes
