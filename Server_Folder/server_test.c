@@ -11,24 +11,32 @@
 
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t queue_cv = PTHREAD_COND_INITIALIZER;
-int client_queue[100];
+int client_queue[1000];
 int queue_front = 0, queue_rear = 0;
 int server_running = 1;
 
-// Function to initialize the input arrays with random integers
-void initializeArray(char *arr, int size) {
-    for (int i = 0; i < size; i++) {
-        arr[2*i] = '9';
-        arr[2*i+1] = ' ';
+void initializeArrayToFile(const char *filename, int size) {
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        perror("Erreur lors de l'ouverture du fichier");
+        return;
     }
-    arr[2*size-1] = '\0';
+
+    //nombre d'arguments en première ligne
+    fprintf(file, "%d\n", size);
+
+    for (int i = 0; i < size; i++) {
+        fprintf(file, "9 ");
+    }
+    
+    fclose(file);
 }
 
 // Fonction pour exécuter un script et récupérer sa sortie
-void execute_script(const char *script, char *args, char *output, int output_size, int count) {
+void execute_script(const char *script, const char *args_filename, char *output, int output_size, int count) {
 
-    if (!args || strlen(args) == 0) {
-        snprintf(output, output_size, "Erreur: Aucun argument fourni.");
+    if (!args_filename) {
+        snprintf(output, output_size, "Erreur: Aucun fichier d'arguments fourni.");
         return;
     }
 
@@ -44,7 +52,7 @@ void execute_script(const char *script, char *args, char *output, int output_siz
     // Construire les arguments pour la fonction
     size_t command_size = (2 * (count + 3) + strlen(script) + 4 + BUFFER_SIZE) * sizeof(char);
     char* command = (char *)malloc(command_size); //On compte aussi le nom de la fonction, les espaces entre les arguments (2*) et les méta-paramètres(+3)
-    snprintf(command, command_size, "%s %d %d %d %s", script, count, grid_size, block_size, args);
+    snprintf(command, command_size, "%s %d %d %s", script, grid_size, block_size, args_filename);
     
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
@@ -79,7 +87,7 @@ void handle_client(int client_socket) {
 
     char *func_name = strtok(buffer, ",");
     char *args = strtok(NULL, ",");
-    int arg = 0;  
+    int arg = 0;
 
     if (args != NULL) {
         arg = atoi(args);
@@ -89,20 +97,22 @@ void handle_client(int client_socket) {
 
     char commande[strlen(func_name) + 3];
     snprintf(commande, sizeof(commande), "./%s", func_name);
-    char *params = (char *)malloc(2*arg*sizeof(char));
 
-    initializeArray(params, arg);
+    char args_filename[BUFFER_SIZE];
+    snprintf(args_filename, BUFFER_SIZE, "args%d.txt", client_socket);
 
-    // Exécuter le script et récupérer le résultat
-    execute_script(commande, params, result, sizeof(result), arg);
-    
-    // Envoyer le résultat au client
+    initializeArrayToFile(args_filename, arg);
+
+    execute_script(commande, args_filename, result, sizeof(result), arg);
+
     send(client_socket, result, strlen(result), 0);
 
     close(client_socket);
     printf("Client déconnecté.\n");
-    free(params);
+
+    remove(args_filename);
 }
+
 
 
 void* worker_thread(void* arg) {
@@ -144,7 +154,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server_fd, 10) < 0) {
+    if (listen(server_fd, 1000) < 0) {
         perror("Erreur listen");
         close(server_fd);
         exit(EXIT_FAILURE);
